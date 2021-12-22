@@ -1,0 +1,9 @@
+body {
+  background-color: #2b2a31;
+}
+
+.game {
+  display:flex;
+  align-items: center;
+  justify-content: center;
+}
