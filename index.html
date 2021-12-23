@@ -11,6 +11,11 @@
   <div class="game">
     <canvas id="canvas"></canvas>
   </div>
+  <div class="button">
+    <button id="fen" class="copyfen" type="button">
+      Copy FEN
+    </button>
+  </div>
   <!-- board -->
   <img id="board" src="images/150.png" hidden="true">
 
@@ -33,6 +38,22 @@
   <!-- misc.. -->
   <img id="move" src="images/move.png" hidden="true" width="100" height="100">
   <img id="take" src="images/take.png" hidden="true" width="100" height="100">
+
+  <audio id="capture">
+    <source src="audio/take.mp3">
+  </audio>
+  <audio id="moveAudio">
+    <source src="audio/move.mp3">
+  </audio>
+  <audio id="start">
+    <source src="audio/start_game.mp3">
+  </audio>
+  <audio id="castle">
+    <source src="audio/castle.mp3">
+  </audio>
+  <audio id="check">
+    <source src="audio/check.mp3">
+  </audio>
 </body>
 <script src="index.js"></script>
 </html>

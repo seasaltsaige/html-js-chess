@@ -2,6 +2,28 @@ body {
   background-color: #2b2a31;
 }
 
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copyfen {
+  margin-top: 2rem;
+  border: none;
+  color: white;
+  background-color: rgb(31, 32, 43);
+  border-radius: 8px;
+  padding: 5px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* .copyfen::selection {
+
+} */
+
 .game {
   display:flex;
   align-items: center;
