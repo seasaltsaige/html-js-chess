@@ -102,7 +102,6 @@ class Rook extends Piece {
       this.location[1]
     ];
     for (let d = 0; d < distToEdges.length; d++) {
-      let capturedPiece;
       inner: for (let i = 1; i < distToEdges[d] + 1; i++) {
         let newCords;
         if (d === 0)
@@ -133,17 +132,7 @@ class Knight extends Piece {
   
   getMoves(board) {
     const moves = [];
-    const arrOfMoves = [
-      [-2, 1],
-      [-1, 2],
-      [1, 2],
-      [2, 1],
-      [2, -1],
-      [1, -2],
-      [-1, -2],
-      [-2, -1],
-    ];
-
+    const arrOfMoves = [ [-2, 1], [-1, 2], [1, 2], [2, 1], [2, -1], [1, -2], [-1, -2], [-2, -1] ];
     for (const move of arrOfMoves) {
       const newCords = [this.location[0] + move[0], this.location[1] + move[1]];
       if (newCords[0] < 8 && newCords[0] >= 0 && newCords[1] < 8 && newCords[1] >= 0) {
@@ -161,15 +150,8 @@ class Bishop extends Piece {
   }
   
   getMoves(board) {
-    const moveTypes = [
-      [-1, 1], // up right
-      [1, 1], // down right
-      [1, -1], // down left
-      [-1, -1], // up right
-    ];
-
+    const moveTypes = [ [-1, 1], [1, 1], [1, -1], [-1, -1] ];
     const moves = [];
-
     for (const move of moveTypes) {
       let i = 1;
       while (true) {
@@ -217,29 +199,13 @@ class King extends Piece {
    */
   getMoves(board, otherPieces) {
     const moves = [];
-    const possibleMoves = [
-      [-1, 0], // up
-      [-1, 1], // up right
-      [0, 1], // right
-      [1, 1], // down right
-      [1, 0], // down
-      [1, -1], // down left
-      [0, -1], // left
-      [-1, -1], // up left
-    ];
-    const castleRooks = this.color === "w" ? [
-      [7, 0],
-      [7, 7]
-    ] : [
-      [0, 0],
-      [0, 7]
-    ];
+    const possibleMoves = [ [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1], [-1, -1] ];
 
+    const castleRooks = this.color === "w" ? [ [7, 0], [7, 7] ] : [ [0, 0], [0, 7] ];
     const leftRook = otherPieces.find(v => v.startingLocation[0] === castleRooks[0][0] && v.startingLocation[1] === castleRooks[0][1]);
     const rightRook = otherPieces.find(v => v.startingLocation[0] === castleRooks[1][0] && v.startingLocation[1] === castleRooks[1][1]);
+
     const row = this.color === "w" ? 7 : 0;
-
-
     for (const move of possibleMoves) {
       const newCords = [this.location[1] + move[1], this.location[0] + move[0]];
       const boardLocation = board[newCords[1]]?.[newCords[0]];
@@ -250,10 +216,7 @@ class King extends Piece {
           moves.push(newCords);
       }
     }
-
-
     castleChecks: if (!this.has_moved) {
-      // const kingLocation = this.location;
       const oppPieces = otherPieces.filter(p => p.color !== this.color).filter(p => p.piece_type[1] !== "k");
       const attacked = kingAttacked(this, oppPieces, board, otherPieces);
       if (attacked) break castleChecks;
@@ -294,9 +257,7 @@ const colMap = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 window.onload = async () => {
   let moveNumber = 1;
-  
   let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-  const date = new Date();
   let pgnString = 
   `${moveNumber}. `;
 
@@ -357,7 +318,6 @@ window.onload = async () => {
   pgnButton.onclick = (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    // pgnString = pgnString.replace(/\[FEN ".+?"\]/, `[FEN "${startFEN}"]`);
     navigator.clipboard.writeText(pgnString);
   }
 
@@ -387,9 +347,6 @@ window.onload = async () => {
   renderBoard(board, ctx, pieceMap, null);
   let turn = "w";
   window.onclick = clickEventFN;
-
-  // ctx.drawImage(pieceMap["wr"], canvas.width/2-200, canvas.width/2-50, pieceSize, pieceSize);
-  
   function clickEventFN (event) {
     const cords = getCursorPosition(canvas, event).reverse().map(v => Math.floor(v / 100));
 
@@ -497,12 +454,7 @@ window.onload = async () => {
         board[oldPos[0]][oldPos[1]] = "";
 
         const opponentKing = pieceArray.find(p => p.piece_type[1] === "k" && p.color !== turn);
-        const oppKingAttacked = kingAttacked(opponentKing, 
-          pieceArray.filter(p => p.color === turn)
-          .filter(p => p.piece_type[1] !== "k"), 
-          board, 
-          pieceArray
-        );
+        const oppKingAttacked = kingAttacked(opponentKing, pieceArray.filter(p => p.color === turn).filter(p => p.piece_type[1] !== "k"), board, pieceArray);
 
         let isPromotion = false;
 
@@ -538,7 +490,6 @@ window.onload = async () => {
                 /**
                  * @type {Rook | Knight | Bishop | Queen}
                  */
-                // let pts = null;
                 if (x >= rookX[0] && x < rookX[1])
                   pts = Rook;
                 else if (x >= knightX[0] && x < knightX[1])
@@ -557,18 +508,12 @@ window.onload = async () => {
                   board[piece.location[0]][piece.location[1]] = piece.piece_type;
                   renderBoard(board, ctx, pieceMap, null);
                   ctx2.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
-
-                  // pgnString += `${cordsToString(cords)}=${piece.piece_type[1]}`;
-
-                  // const opponentPieces
-                  // opponentKing
                   const isCheck = kingAttacked(opponentKing, pieceArray.filter(p => p.color === piece.color), board, pieceArray);
                   const isCheckMate = checkmate(opponentKing, board, pieceArray);
                   const fenStr = cordsToString(cords);
                   const oldFen = cordsToString(oldPos);
-                  // const isTake 
-                  if (isCheckMate) {
 
+                  if (isCheckMate) {
                     if (tookPiece) {
                       pgnString += `${oldFen[0]}x${fenStr}=${piece.piece_type[1].toUpperCase()}# ${turn === "w" ? "1-0" : "0-1"}`;
                     } else {
@@ -586,7 +531,6 @@ window.onload = async () => {
                     ctx.fill();
                     ctx.fillStyle = "white";
                     ctx.fillText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`, canvas.width/2, canvas.height/2);
-        
 
                     return;
                     
@@ -692,11 +636,7 @@ window.onload = async () => {
         renderBoard(board, ctx, pieceMap, null);
       }
     } 
-    
-  console.log(pgnString)
   }
-
-
 }
 /**
  * 
@@ -1006,7 +946,6 @@ function kingAttacked(king, opponentPieces, board, pieceArray) {
 function checkmate(king, board, pieceArray) {
   if (filterLegalMoves(king, board, pieceArray).length < 1) {
     const teamPieces = pieceArray.filter(p => p.color === king.color).filter(p => p.piece_type[1] !== "k");
-    const enemyPieces = pieceArray.filter(p => p.color !== king.color);
     let anyLegalMoves = [];
 
     for (const p of teamPieces) {
