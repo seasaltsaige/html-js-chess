@@ -298,16 +298,7 @@ window.onload = async () => {
   let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
   const date = new Date();
   let pgnString = 
-  `[Event "Unknown"]
-  [Site "Unknown"]
-  [Date "${date.getFullYear()}.${date.getDay()}.${date.getMonth()}"]
-  [Round "1"]
-  [White "White"]
-  [Black "Black"]
-  [Result "Unknown"]
-  [FEN "${startFEN}"]
-  
-  ${moveNumber}. `;
+  `${moveNumber}. `;
 
   const startGame = document.getElementById("start");
   startGame.play();
