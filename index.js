@@ -1,6 +1,18 @@
 const boardSize = 800;
 const pieceSize = boardSize / 8;
 
+CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
+  this.beginPath();
+  this.moveTo(x+r, y);
+  this.arcTo(x+w, y,   x+w, y+h, r);
+  this.arcTo(x+w, y+h, x,   y+h, r);
+  this.arcTo(x,   y+h, x,   y,   r);
+  this.arcTo(x,   y,   x+w, y,   r);
+  this.closePath();
+}
+
 class Piece {
   /**
    * @type {[number, number]}
@@ -286,12 +298,18 @@ window.onload = async () => {
   const moveSound = document.getElementById("moveAudio");
   const takeSound = document.getElementById("capture");
   const checkSound = document.getElementById("check");
+  const checkmateSound = document.getElementById("checkmate");
   const fenButton = document.getElementById("fen");
 
+  const pawnPromotionBoard = document.getElementById("promote");
   
   const canvas = document.getElementById("canvas");
   canvas.width = boardSize;
   canvas.height = boardSize;
+
+  const secondaryCanvas = document.getElementById("pawn");
+  secondaryCanvas.width = boardSize;
+  secondaryCanvas.height = boardSize;
 
   let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
   const board = fillBoard(startFEN);
@@ -346,9 +364,17 @@ window.onload = async () => {
    * @type {CanvasRenderingContext2D}
    */
   const ctx = canvas.getContext("2d");
+  /**
+   * @type {CanvasRenderingContext2D}
+   */
+  const ctx2 = secondaryCanvas.getContext("2d");
   renderBoard(board, ctx, pieceMap, null);
   let turn = "w";
-  window.onclick = (event) => {
+  window.onclick = clickEventFN;
+
+  // ctx.drawImage(pieceMap["wr"], canvas.width/2-200, canvas.width/2-50, pieceSize, pieceSize);
+  
+  function clickEventFN (event) {
     const cords = getCursorPosition(canvas, event).reverse().map(v => Math.floor(v / 100));
 
     if (selectedPiece) {
@@ -442,11 +468,83 @@ window.onload = async () => {
           pieceArray
         );
 
-        selectedPiece = null;
-        renderBoard(board, ctx, pieceMap, null);
+        if (selectedPiece.piece_type[1] === "p") {
+          if ((selectedPiece.color === "w" && selectedPiece.location[0] === 0) || (selectedPiece.color === "b" && selectedPiece.location[0] === 7))  {
 
-        if (tookPiece) takeSound.play();
-        else if (oppKingAttacked) checkSound.play();
+            ctx2.drawImage(pawnPromotionBoard, canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
+            ctx2.rect(canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
+            ctx2.textAlign = "center";
+            ctx2.font = "50px bold arial";
+            ctx2.fillStyle = "black";
+            ctx2.fillText("Choose a piece to promote to", canvas.width/2, canvas.height/2-70);
+            ctx2.drawImage(pieceMap[turn + "r"], canvas.width/2-200, canvas.width/2-50, pieceSize, pieceSize);
+            ctx2.drawImage(pieceMap[turn + "n"], canvas.width/2-100, canvas.height/2-50, pieceSize, pieceSize);
+            ctx2.drawImage(pieceMap[turn + "b"], canvas.width/2, canvas.width/2-50, pieceSize, pieceSize);
+            ctx2.drawImage(pieceMap[turn + "q"], canvas.width/2+100, canvas.height/2-50, pieceSize, pieceSize);
+            ctx2.lineWidth = 5;
+            ctx2.stroke();
+
+            const pawn = selectedPiece;
+            let pts = null;
+
+            window.onclick = (ev) => {
+              const [x, y] = getCursorPosition(canvas, ev);
+
+              const yRange = [350, 450];
+              const rookX = [200, 300];
+              const knightX = [300, 400];
+              const bishopX = [400, 500];
+              const queenX = [500, 600];
+
+              if (y >= yRange[0] && y <= yRange[1]) {
+                /**
+                 * @type {Rook | Knight | Bishop | Queen}
+                 */
+                // let pts = null;
+                if (x >= rookX[0] && x < rookX[1])
+                  pts = Rook;
+                else if (x >= knightX[0] && x < knightX[1])
+                  pts = Knight;
+                else if (x >= bishopX[0] && x < bishopX[1])
+                  pts = Bishop;
+                else if (x >= queenX[0] && x < queenX[1])
+                  pts = Queen;
+                else pts = null;
+
+                if (pts !== null) {
+                  const piece = new pts(pawn.location, pawn.color);
+                  piece.startingLocation = pawn.startingLocation;
+                  pieceArray.splice(pieceArray.findIndex(v => v.location[0] === pawn.location[0] && v.location[1] === pawn.location[1]), 1);
+                  pieceArray.push(piece);
+                  board[piece.location[0]][piece.location[1]] = piece.piece_type;
+                  renderBoard(board, ctx, pieceMap, null);
+                  ctx2.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
+                  window.onclick = clickEventFN;
+                  return;
+                }
+              }
+            }
+          }
+        }
+
+        const checkMate = checkmate(pieceArray.find(p => p.color !== selectedPiece.color && p.piece_type[1] === "k"), board, pieceArray);
+
+        selectedPiece = null;
+
+        renderBoard(board, ctx, pieceMap, null);
+        if (checkMate) {
+          window.onclick = () => {};
+          checkmateSound.play();
+          ctx.fillStyle = "rgb(31, 32, 43)";
+          ctx.font = "50px bold arial";
+          const { width: textWidth } = ctx.measureText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`);
+          
+          ctx.roundRect(canvas.width / 2 - (textWidth / 2) - 50, canvas.height/2 - 100, textWidth + 100, 170, 30);
+          ctx.fill();
+          ctx.fillStyle = "white";
+          ctx.fillText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`, canvas.width/2, canvas.height/2);
+        } else if (oppKingAttacked) checkSound.play();
+        else if (tookPiece) takeSound.play();
         else moveSound.play();
         turn = turn === "w" ? "b" : "w";
       } else {
@@ -662,10 +760,18 @@ function filterLegalMoves(piece, board, pieceArray) {
         unattacked_moves.push(move);
       } else {
         for (const otherPiece of opponentPieces) {
-          const pMoves = otherPiece.getMoves(board, pieceArray);
-          if (pMoves.find(v => v[0] === move[0] && v[1] === move[1]))
-            continue outer;
-            
+
+          if (otherPiece.piece_type[1] === "p") {
+            const pawnMoves = otherPiece.getMoves(board, pieceArray);
+            const correctMoves = pawnMoves.filter(m => m[1] !== move[1]);
+            if (correctMoves.find(v => v[0] === move[0] && v[1] === move[1]))
+              continue outer;
+          } else {
+
+            const pMoves = otherPiece.getMoves(board, pieceArray);
+            if (pMoves.find(v => v[0] === move[0] && v[1] === move[1]))
+              continue outer;
+          }
         }
 
         unattacked_moves.push(move);
@@ -683,9 +789,9 @@ function filterLegalMoves(piece, board, pieceArray) {
       }
       let tempBoard = duplicateBoard(board);
       let dupePieces = dupePiecesArray(pieceArray);
-      tempBoard[piece.location[0]][piece.location[1]] = "";
+      tempBoard[kingActualPos[0]][kingActualPos[1]] = "";
       const oldSpot = tempBoard[move[1]][move[0]];
-      // piece.location 
+
       if (oldSpot !== "")
         dupePieces.splice(dupePieces.findIndex(p => p.location[0] === move[1] && p.location[1] === move[0]), 1);
 
@@ -698,7 +804,6 @@ function filterLegalMoves(piece, board, pieceArray) {
     }
 
     piece.location = kingActualPos;
-
 
     return legalMoves;
   } else {
@@ -770,4 +875,26 @@ function kingAttacked(king, opponentPieces, board, pieceArray) {
   }
 
   return kingAttacked;
+}
+
+/**
+ * 
+ * @param {King} king 
+ * @param {string[][]} board 
+ * @param {Piece[]} pieceArray 
+ */
+function checkmate(king, board, pieceArray) {
+  if (filterLegalMoves(king, board, pieceArray).length < 1) {
+    const teamPieces = pieceArray.filter(p => p.color === king.color).filter(p => p.piece_type[1] !== "k");
+    const enemyPieces = pieceArray.filter(p => p.color !== king.color);
+    let anyLegalMoves = [];
+
+    for (const p of teamPieces) {
+      const legalMoves = filterLegalMoves(p, board, pieceArray);
+      anyLegalMoves = anyLegalMoves.concat(legalMoves);
+    }
+
+    if (anyLegalMoves.length < 1) return true;
+
+  }  
 }

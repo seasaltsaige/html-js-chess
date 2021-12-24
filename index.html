@@ -10,6 +10,7 @@
 <body>
   <div class="game">
     <canvas id="canvas"></canvas>
+    <canvas id="pawn"></canvas>
   </div>
   <div class="button">
     <button id="fen" class="copyfen" type="button">
@@ -18,6 +19,7 @@
   </div>
   <!-- board -->
   <img id="board" src="images/150.png" hidden="true">
+  <img id="promote" src="images/4square.png" hidden="true">
 
   <!-- white pieces -->
   <img id="wp" src="images/wp.png" hidden="true" width="100" height="100">
@@ -53,6 +55,9 @@
   </audio>
   <audio id="check">
     <source src="audio/check.mp3">
+  </audio>
+  <audio id="checkmate">
+    <source src="audio/checkmate.mp3">
   </audio>
 </body>
 <script src="index.js"></script>

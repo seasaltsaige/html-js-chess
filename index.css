@@ -4,9 +4,8 @@ body {
 
 
 .button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  top: 90%;
 }
 
 .copyfen {
@@ -24,8 +23,27 @@ body {
 
 } */
 
-.game {
-  display:flex;
-  align-items: center;
-  justify-content: center;
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
 }
+
+.game {
+  position: relative;
+  /* width: 400px;
+  height: 300px; */
+}
+
+.game canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* 
+.pawnPromotion {
+  position: absolute;
+  left: 50%;
+  top: 50%
+} */
