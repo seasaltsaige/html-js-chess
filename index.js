@@ -290,7 +290,25 @@ let selectedPiece = null;
 
 // START GAME LOGIC
 
+const colMap = ["a", "b", "c", "d", "e", "f", "g", "h"];
+
 window.onload = async () => {
+  let moveNumber = 1;
+  
+  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+  const date = new Date();
+  let pgnString = 
+  `[Event "Unknown"]
+  [Site "Unknown"]
+  [Date "${date.getFullYear()}.${date.getDay()}.${date.getMonth()}"]
+  [Round "1"]
+  [White "White"]
+  [Black "Black"]
+  [Result "Unknown"]
+  [FEN "${startFEN}"]
+  
+  ${moveNumber}. `;
+
   const startGame = document.getElementById("start");
   startGame.play();
 
@@ -300,6 +318,7 @@ window.onload = async () => {
   const checkSound = document.getElementById("check");
   const checkmateSound = document.getElementById("checkmate");
   const fenButton = document.getElementById("fen");
+  const pgnButton = document.getElementById("pgn");
 
   const pawnPromotionBoard = document.getElementById("promote");
   
@@ -311,7 +330,6 @@ window.onload = async () => {
   secondaryCanvas.width = boardSize;
   secondaryCanvas.height = boardSize;
 
-  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
   const board = fillBoard(startFEN);
   const pieceMap = {
     bp: document.getElementById("bp"),
@@ -343,6 +361,13 @@ window.onload = async () => {
     ev.stopPropagation();
     const fen = boardToFEN(board);
     navigator.clipboard.writeText(fen);
+  }
+
+  pgnButton.onclick = (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    // pgnString = pgnString.replace(/\[FEN ".+?"\]/, `[FEN "${startFEN}"]`);
+    navigator.clipboard.writeText(pgnString);
   }
 
   /**
@@ -379,7 +404,6 @@ window.onload = async () => {
 
     if (selectedPiece) {
       const moves = filterLegalMoves(selectedPiece, board, pieceArray)// selectedPiece.getMoves(board, pieceArray);
-      // const moves = selectedPiece.piece_type[1] === "k" ? filterLegalMoves(selectedPiece, board, pieceArray) : selectedPiece.getMoves(board, pieceArray)
       if (moves.find(v => typeof v === "string")) {
 
         const correct_row = selectedPiece.color === "w" ? 7 : 0;
@@ -416,8 +440,16 @@ window.onload = async () => {
             selectedPiece = null;
             renderBoard(board, ctx, pieceMap, null);
             castleSound.play();
+            console.log(rook_col, correct_row);
+            if (rook_col === 7) pgnString += "O-O ";
+            else if (rook_col === 0) pgnString += "O-O-O ";
 
             turn = turn === "w" ? "b" : "w";
+
+            if (turn === "w") {
+              moveNumber++;
+              pgnString += `${moveNumber}. `;
+            } 
 
           }
         } else {
@@ -432,15 +464,28 @@ window.onload = async () => {
             selectedPiece.location = cords;
             selectedPiece.has_moved = true;
             board[cords[0]][cords[1]] = selectedPiece.piece_type;
+            const oldPieceBoard = board[oldPos[0]][oldPos[1]];
             board[oldPos[0]][oldPos[1]] = "";
             
             selectedPiece = null;
             renderBoard(board, ctx, pieceMap, null);
     
-            if (tookPiece) takeSound.play();
-            else moveSound.play();
+            const pieceForPGNTooken = oldPieceBoard[1].toUpperCase();
+            const cordsAsString = cordsToString(cords);
+            if (tookPiece) {
+              takeSound.play();
+              pgnString += `${pieceForPGNTooken}x${cordsAsString}`; 
+            } else {
+              moveSound.play();
+              pgnString += `${pieceForPGNTooken}${cordsAsString}`;
+            }
 
             turn = turn === "w" ? "b" : "w";
+
+            if (turn === "w") {
+              moveNumber++;
+              pgnString += `${moveNumber}. `;
+            } 
           } else {
             selectedPiece = null;
             renderBoard(board, ctx, pieceMap, null);
@@ -468,9 +513,11 @@ window.onload = async () => {
           pieceArray
         );
 
+        let isPromotion = false;
+
         if (selectedPiece.piece_type[1] === "p") {
           if ((selectedPiece.color === "w" && selectedPiece.location[0] === 0) || (selectedPiece.color === "b" && selectedPiece.location[0] === 7))  {
-
+            isPromotion = true;
             ctx2.drawImage(pawnPromotionBoard, canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
             ctx2.rect(canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
             ctx2.textAlign = "center";
@@ -519,6 +566,51 @@ window.onload = async () => {
                   board[piece.location[0]][piece.location[1]] = piece.piece_type;
                   renderBoard(board, ctx, pieceMap, null);
                   ctx2.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
+
+                  // pgnString += `${cordsToString(cords)}=${piece.piece_type[1]}`;
+
+                  // const opponentPieces
+                  // opponentKing
+                  const isCheck = kingAttacked(opponentKing, pieceArray.filter(p => p.color === piece.color), board, pieceArray);
+                  const isCheckMate = checkmate(opponentKing, board, pieceArray);
+                  const fenStr = cordsToString(cords);
+                  const oldFen = cordsToString(oldPos);
+                  // const isTake 
+                  if (isCheckMate) {
+
+                    if (tookPiece) {
+                      pgnString += `${oldFen[0]}x${fenStr}=${piece.piece_type[1].toUpperCase()}# ${turn === "w" ? "1-0" : "0-1"}`;
+                    } else {
+                      pgnString += `${fenStr}=${piece.piece_type[1].toUpperCase()}# ${turn === "w" ? "1-0" : "0-1"}`;
+                    }
+
+                    window.onclick = () => {};
+                    checkmateSound.play();
+
+                    ctx.fillStyle = "rgb(31, 32, 43)";
+                    ctx.font = "50px bold arial";
+                    const { width: textWidth } = ctx.measureText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`);
+                    
+                    ctx.roundRect(canvas.width / 2 - (textWidth / 2) - 50, canvas.height/2 - 100, textWidth + 100, 170, 30);
+                    ctx.fill();
+                    ctx.fillStyle = "white";
+                    ctx.fillText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`, canvas.width/2, canvas.height/2);
+        
+
+                    return;
+                    
+                  } else if (isCheck) {
+
+                    if (tookPiece) 
+                      pgnString += `${oldFen[0]}x${fenStr}=${piece.piece_type[1].toUpperCase()}+ `;
+                    else pgnString += `${fenStr}=${piece.piece_type[1].toUpperCase()}+ `;
+
+                    checkSound.play();
+                  } else if (tookPiece) {
+                    pgnString += `${oldFen}[0]x${fenStr}=${piece.piece_type[1].toUpperCase()} `;
+                    takeSound.play();
+                  }
+
                   window.onclick = clickEventFN;
                   return;
                 }
@@ -528,29 +620,63 @@ window.onload = async () => {
         }
 
         const checkMate = checkmate(pieceArray.find(p => p.color !== selectedPiece.color && p.piece_type[1] === "k"), board, pieceArray);
-
-        selectedPiece = null;
-
+        
         renderBoard(board, ctx, pieceMap, null);
-        if (checkMate) {
-          window.onclick = () => {};
-          checkmateSound.play();
-          ctx.fillStyle = "rgb(31, 32, 43)";
-          ctx.font = "50px bold arial";
-          const { width: textWidth } = ctx.measureText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`);
-          
-          ctx.roundRect(canvas.width / 2 - (textWidth / 2) - 50, canvas.height/2 - 100, textWidth + 100, 170, 30);
-          ctx.fill();
-          ctx.fillStyle = "white";
-          ctx.fillText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`, canvas.width/2, canvas.height/2);
-        } else if (oppKingAttacked) checkSound.play();
-        else if (tookPiece) takeSound.play();
-        else moveSound.play();
+        if (!isPromotion) {
+          if (checkMate) {
+            window.onclick = () => {};
+            checkmateSound.play();
+            ctx.fillStyle = "rgb(31, 32, 43)";
+            ctx.font = "50px bold arial";
+            const { width: textWidth } = ctx.measureText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`);
+            
+            ctx.roundRect(canvas.width / 2 - (textWidth / 2) - 50, canvas.height/2 - 100, textWidth + 100, 170, 30);
+            ctx.fill();
+            ctx.fillStyle = "white";
+            ctx.fillText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`, canvas.width/2, canvas.height/2);
+
+            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            const fen = cordsToString(cords);
+            const oldFen = cordsToString(oldPos);
+            if (tookPiece) pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen}# ${turn === "w" ? "1-0" : "0-1"}`;
+            else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN}${fen}# ${turn === "w" ? "1-0" : "0-1"}`;
+
+            pgnString = pgnString.replace("Result \"Unknown\"", `Result "${turn === "w" ? "1-0" : "0-1"}"`)
+            navigator.clipboard.writeText(pgnString);
+
+          } else if (oppKingAttacked) {
+            checkSound.play();
+
+            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            const fen = cordsToString(cords);
+            const oldFen = cordsToString(oldPos);
+            if (tookPiece) pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen}+ `;
+            else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN}${fen}+ `;
+          } else if (tookPiece) {
+            takeSound.play();
+            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            const fen = cordsToString(cords);
+            const oldFen = cordsToString(oldPos);
+            pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen} `;
+          } else {
+            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            const fen = cordsToString(cords);
+            pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN}${fen} `;
+            moveSound.play();
+          }
+        }
         turn = turn === "w" ? "b" : "w";
+        if (turn === "w") {
+          moveNumber++;
+          pgnString += `${moveNumber}. `;
+        } 
       } else {
         selectedPiece = null;
         renderBoard(board, ctx, pieceMap, null);
       }     
+
+      
+      selectedPiece = null;
     } else {
       const pieceAtLocation = pieceArray.find(p => p.location[0] === cords[0] && p.location[1] === cords[1]);
       if (pieceAtLocation?.color !== turn) return;
@@ -575,7 +701,10 @@ window.onload = async () => {
         renderBoard(board, ctx, pieceMap, null);
       }
     } 
+    
+  console.log(pgnString)
   }
+
 
 }
 /**
@@ -897,4 +1026,12 @@ function checkmate(king, board, pieceArray) {
     if (anyLegalMoves.length < 1) return true;
 
   }  
+}
+/**
+ * 
+ * @param {[number, number]} cords 
+ */
+function cordsToString(cords) {
+  const letter = colMap[cords[1]]
+  return `${letter}${8 - cords[0]}`;
 }
