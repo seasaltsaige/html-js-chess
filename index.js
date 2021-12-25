@@ -271,7 +271,7 @@ const colMap = ["a", "b", "c", "d", "e", "f", "g", "h"];
 window.onload = async () => {
   let moveNumber = 1;
   let halfMoveNumber = 0;
-  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPKPPPP/R6R w KQkq - 0 1";
   const date = new Date();
 
   /**
@@ -285,6 +285,7 @@ window.onload = async () => {
   [Round "1"]
   [White "White"]
   [Black "Black"]
+  [FEN "${startFEN}"]
   [Result "*"]
   ${moveNumber}. `;
 
@@ -359,6 +360,8 @@ window.onload = async () => {
   pgnButton.onclick = (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
+    
+    // pgnString = pgnString.replace(/\[FEN ".+?"\]/, `[FEN "${startFEN}"]`)
     navigator.clipboard.writeText(pgnString);
   }
 
@@ -705,33 +708,31 @@ window.onload = async () => {
             ctx.fillStyle = "white";
             ctx.fillText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`, canvas.width/2, canvas.height/2);
 
-            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+
             const fen = cordsToString(cords);
             const oldFen = cordsToString(oldPos);
             if (tookPiece) pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen}# ${turn === "w" ? "1-0" : "0-1"}`;
-            else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN}${fen}# ${turn === "w" ? "1-0" : "0-1"}`;
-
+            else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN + cordsToString(oldPos)[0]}${fen}# ${turn === "w" ? "1-0" : "0-1"}`;
             pgnString = pgnString.replace("Result \"*\"", `Result "${turn === "w" ? "1-0" : "0-1"}"`)
             navigator.clipboard.writeText(pgnString);
-
           } else if (oppKingAttacked) {
             checkSound.play();
-
-            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
             const fen = cordsToString(cords);
             const oldFen = cordsToString(oldPos);
             if (tookPiece) pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen}+ `;
-            else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN}${fen}+ `;
+            else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN + cordsToString(oldPos)[0]}${fen}+ `;
           } else if (tookPiece) {
             takeSound.play();
-            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
             const fen = cordsToString(cords);
             const oldFen = cordsToString(oldPos);
-            pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen} `;
+            pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN + cordsToString(oldPos)[0]}x${fen} `;
           } else {
-            const pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
+            let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
             const fen = cordsToString(cords);
-            pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN}${fen} `;
+            pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN + cordsToString(oldPos)[0]}${fen} `;
             moveSound.play();
           }
         }
@@ -782,6 +783,9 @@ window.onload = async () => {
         renderBoard(board, ctx, pieceMap, null);
       }
     } 
+
+    // AMBIGUOUS MOVES FOR ROOKS ON SAME RANK -- FIX (both rooks on
+    // back rank, both can move to e file, put starting file in pgn (Rfe8))
 
 
     const lastPieceKing = pieceArray.find(p => p.color === turn && p.piece_type[1] === "k");
