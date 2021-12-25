@@ -262,16 +262,14 @@ class King extends Piece {
 };
 
 let selectedPiece = null;
-
 const fenArrayForDrawByRepition = [];
-// START GAME LOGIC
 
 const colMap = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 window.onload = async () => {
   let moveNumber = 1;
   let halfMoveNumber = 0;
-  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPKPPPP/R6R w KQkq - 0 1";
+  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const date = new Date();
 
   /**
@@ -281,13 +279,13 @@ window.onload = async () => {
 
   let pgnString = 
   `[Event "Homemade Chess"]
-  [Date "${date.getFullYear()}.${date.getMonth()}.${date.getDay()}"]
-  [Round "1"]
-  [White "White"]
-  [Black "Black"]
-  [FEN "${startFEN}"]
-  [Result "*"]
-  ${moveNumber}. `;
+[Date "${date.getFullYear()}.${date.getMonth()}.${date.getDay()}"]
+[Round "1"]
+[White "White"]
+[Black "Black"]
+[FEN "${startFEN}"]
+[Result "*"]
+${moveNumber}. `;
 
   const startGame = document.getElementById("start");
   startGame.play();
@@ -353,15 +351,12 @@ window.onload = async () => {
   fenButton.onclick = (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    // const fen = boardToFEN(board);
     navigator.clipboard.writeText(startFEN);
   }
 
   pgnButton.onclick = (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    
-    // pgnString = pgnString.replace(/\[FEN ".+?"\]/, `[FEN "${startFEN}"]`)
     navigator.clipboard.writeText(pgnString);
   }
 
@@ -370,7 +365,6 @@ window.onload = async () => {
    */
   const pieceArray = [];
   let counter = 0;
-  // let 
   for (let row = 0; row < board.length; row++) {
     for (let col = 0; col < board[row].length; col++) {
       const piece = classMap[board[row][col][1]];
@@ -402,13 +396,8 @@ window.onload = async () => {
   }
   const move = document.getElementById("move");
   const take = document.getElementById("take");
-  /**
-   * @type {CanvasRenderingContext2D}
-   */
+
   const ctx = canvas.getContext("2d");
-  /**
-   * @type {CanvasRenderingContext2D}
-   */
   const ctx2 = secondaryCanvas.getContext("2d");
   renderBoard(board, ctx, pieceMap, null);
   window.onclick = clickEventFN;
@@ -510,7 +499,6 @@ window.onload = async () => {
 
             fenArrayForDrawByRepition.push(startFEN);
 
-
             if (turn === "w") {
               moveNumber++;
               pgnString += `${moveNumber}. `;
@@ -523,7 +511,6 @@ window.onload = async () => {
 
       } else if (moves.find(v => v[0] === cords[1] && v[1] === cords[0])) {
         let tookPiece = false;
-
 
         if (board[cords[0]][cords[1]][0] !== selectedPiece.color && board[cords[0]][cords[1]] !== "")  {
           pieceArray.splice(pieceArray.findIndex(v => v.location[0] === cords[0] && v.location[1] === cords[1]), 1);
@@ -784,10 +771,6 @@ window.onload = async () => {
       }
     } 
 
-    // AMBIGUOUS MOVES FOR ROOKS ON SAME RANK -- FIX (both rooks on
-    // back rank, both can move to e file, put starting file in pgn (Rfe8))
-
-
     const lastPieceKing = pieceArray.find(p => p.color === turn && p.piece_type[1] === "k");
 
     if (fenArrayForDrawByRepition.filter(v => v.slice(0, v.length - 4) === startFEN.slice(0, v.length - 4)).length === 3) {
@@ -843,7 +826,6 @@ window.onload = async () => {
   }
 }
 /**
- * 
  * @param  {[number, number]} param0 
  * @param {string[][]} board 
  * @returns {string}
@@ -854,7 +836,6 @@ function cordsToBoardSquare(board, ...[x,y]) {
 }
 
 /**
- * 
  * @param {*} board 
  * @param {CanvasRenderingContext2D} ctx 
  * @param {*} pieceMap 
@@ -901,7 +882,6 @@ function renderBoard(board, ctx, pieceMap, selectedPieceCords) {
       }
     }
   }
-
 }
 
 function floor100(number) {
@@ -967,8 +947,6 @@ function fillBoard(fen) {
       kingSide: castleRights.includes("K"),
     }
   }
-
-
   return {
     board,
     turn,
@@ -990,7 +968,6 @@ function getCursorPosition(canvas, event) {
  * @param {string[][]} board
  * @returns {string} 
  */
-
 function boardToFEN(board) {
   const tboard = [];
   let t = 0;
@@ -1152,7 +1129,6 @@ function duplicateBoard(board) {
   return b;
 }
 /**
- * 
  * @param {Piece[]} pieces 
  * @returns {Piece[]}
  */
@@ -1225,12 +1201,10 @@ function draw(king, board, pieceArray) {
     }
 
     if (anyLegalMoves.length < 1) return true;
-
   }  
 }
 
 /**
- * 
  * @param {[number, number]} cords 
  */
 function cordsToString(cords) {
@@ -1239,7 +1213,6 @@ function cordsToString(cords) {
 }
 
 /**
- * 
  * @param {string} fen 
  * @returns {[number, number]}
  */
