@@ -21,50 +21,79 @@
     </button>
   </div>
   <!-- board -->
-  <img id="board" src="images/150.png" hidden="true">
-  <img id="promote" src="images/4square.png" hidden="true">
+  <img id="board" src="src/images/150.png" hidden="true">
+  <img id="promote" src="src/images/4square.png" hidden="true">
 
   <!-- white pieces -->
-  <img id="wp" src="images/wp.png" hidden="true" width="100" height="100">
-  <img id="wr" src="images/wr.png" hidden="true" width="100" height="100">
-  <img id="wn" src="images/wn.png" hidden="true" width="100" height="100">
-  <img id="wb" src="images/wb.png" hidden="true" width="100" height="100">
-  <img id="wk" src="images/wk.png" hidden="true" width="100" height="100">
-  <img id="wq" src="images/wq.png" hidden="true" width="100" height="100">
+  <img id="wp" src="src/images/wp.png" hidden="true" width="100" height="100">
+  <img id="wr" src="src/images/wr.png" hidden="true" width="100" height="100">
+  <img id="wn" src="src/images/wn.png" hidden="true" width="100" height="100">
+  <img id="wb" src="src/images/wb.png" hidden="true" width="100" height="100">
+  <img id="wk" src="src/images/wk.png" hidden="true" width="100" height="100">
+  <img id="wq" src="src/images/wq.png" hidden="true" width="100" height="100">
 
   <!-- black pieces -->
-  <img id="bp" src="images/bp.png" hidden="true" width="100" height="100">
-  <img id="br" src="images/br.png" hidden="true" width="100" height="100">
-  <img id="bn" src="images/bn.png" hidden="true" width="100" height="100">
-  <img id="bb" src="images/bb.png" hidden="true" width="100" height="100">
-  <img id="bk" src="images/bk.png" hidden="true" width="100" height="100">
-  <img id="bq" src="images/bq.png" hidden="true" width="100" height="100">
+  <img id="bp" src="src/images/bp.png" hidden="true" width="100" height="100">
+  <img id="br" src="src/images/br.png" hidden="true" width="100" height="100">
+  <img id="bn" src="src/images/bn.png" hidden="true" width="100" height="100">
+  <img id="bb" src="src/images/bb.png" hidden="true" width="100" height="100">
+  <img id="bk" src="src/images/bk.png" hidden="true" width="100" height="100">
+  <img id="bq" src="src/images/bq.png" hidden="true" width="100" height="100">
 
   <!-- misc.. -->
-  <img id="move" src="images/move.png" hidden="true" width="100" height="100">
-  <img id="take" src="images/take.png" hidden="true" width="100" height="100">
+  <img id="move" src="src/images/move.png" hidden="true" width="100" height="100">
+  <img id="take" src="src/images/take.png" hidden="true" width="100" height="100">
 
+  <!-- audio files -->
   <audio id="capture">
-    <source src="audio/take.mp3">
+    <source src="src/audio/take.mp3">
   </audio>
   <audio id="moveAudio">
-    <source src="audio/move.mp3">
+    <source src="src/audio/move.mp3">
   </audio>
   <audio id="start">
-    <source src="audio/start_game.mp3">
+    <source src="src/audio/start_game.mp3">
   </audio>
   <audio id="castle">
-    <source src="audio/castle.mp3">
+    <source src="src/audio/castle.mp3">
   </audio>
   <audio id="check">
-    <source src="audio/check.mp3">
+    <source src="src/audio/check.mp3">
   </audio>
   <audio id="checkmate">
-    <source src="audio/checkmate.mp3">
+    <source src="src/audio/checkmate.mp3">
   </audio>
   <audio id="stalemate">
-    <source src="audio/stalemate.mp3">
+    <source src="src/audio/stalemate.mp3">
   </audio>
 </body>
+
+<!-- Piece Classes -->
+<script src="src/Pieces/Piece.js"></script>
+<script src="src/Pieces/Pawn.js"></script>
+<script src="src/Pieces/Knight.js"></script>
+<script src="src/Pieces/Bishop.js"></script>
+<script src="src/Pieces/Rook.js"></script>
+<script src="src/Pieces/Queen.js"></script>
+<script src="src/Pieces/King.js"></script>
+
+<!-- Functions -->
+<script src="src/functions/roundRect.js"></script>
+<script src="src/functions/cordsToBoardSquare.js"></script>
+<script src="src/functions/renderBoard.js"></script>
+<script src="src/functions/floorOneHundred.js"></script>
+<script src="src/functions/fillBoard.js"></script>
+<script src="src/functions/getCursorPosOnCanvas.js"></script>
+<script src="src/functions/boardToMainFEN.js"></script>
+<script src="src/functions/filterLegalMoves.js"></script>
+<script src="src/functions/duplicateBoard.js"></script>
+<script src="src/functions/kingAttacked.js"></script>
+<script src="src/functions/checkmate.js"></script>
+<script src="src/functions/draw.js"></script>
+<script src="src/functions/cordsToString.js"></script>
+<script src="src/functions/fenToPosition.js"></script>
+<script src="src/functions/insufficientMaterial.js"></script>
+
+<!-- Main script -->
 <script src="index.js"></script>
 </html>
