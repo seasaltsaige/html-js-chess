@@ -269,7 +269,7 @@ const colMap = ["a", "b", "c", "d", "e", "f", "g", "h"];
 window.onload = async () => {
   let moveNumber = 1;
   let halfMoveNumber = 0;
-  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  let startFEN = "k7/8/8/8/8/8/8/KR6 w KQkq - 0 1";
   const date = new Date();
 
   /**
@@ -822,6 +822,22 @@ ${moveNumber}. `;
       pgnString += "1/2-1/2";
       pgnString = pgnString.replace("Result \"*\"", `Result "1/2-1/2"`)
       navigator.clipboard.writeText(pgnString);
+    } else if (insufficientMaterial(pieceArray)) {
+      window.onclick = () => {};
+      ctx.fillStyle = "rgb(31, 32, 43)";
+      ctx.font = "50px bold arial";
+      const { width: textWidth } = ctx.measureText(`Draw due to insufficient material!`);
+      
+      ctx.roundRect(canvas.width / 2 - (textWidth / 2) - 50, canvas.height/2 - 100, textWidth + 100, 170, 30);
+      ctx.fill();
+      ctx.fillStyle = "white";
+      ctx.fillText(`Draw due to insufficient material!`, canvas.width/2, canvas.height/2);
+
+      stalemateSound.play();
+      pgnString = pgnString.slice(0, pgnString.length - 3);
+      pgnString += "1/2-1/2";
+      pgnString = pgnString.replace("Result \"*\"", `Result "1/2-1/2"`)
+      navigator.clipboard.writeText(pgnString);
     }
   }
 }
@@ -1225,4 +1241,37 @@ function fenToPosition(fen) {
   const x = colMap.indexOf(letter)
   const y = 8 - parseInt(num);
   return [y, x];
+}
+
+/**
+ * @param {Piece[]} pieceArray 
+ */
+function insufficientMaterial(pieceArray) {
+  const blackPieces = pieceArray.filter(p => p.color === "b");
+  const whitePieces = pieceArray.filter(p => p.color === "w");
+
+  if (!blackPieces.find(p => p.piece_type === "bp") && 
+  !whitePieces.find(p => p.piece_type === "wp")) {
+
+    if (blackPieces.length < 4 && whitePieces.length < 4) {
+      if (blackPieces.length < 3 && whitePieces.length < 3) {
+        if (!blackPieces.find(p => p.piece_type === "br") && 
+        !whitePieces.find(p => p.piece_type === "wr"))
+          return true;
+        else return false;
+      } else if (whitePieces.length === 1 && blackPieces.length === 3) {
+        if (!blackPieces.find(p => p.piece_type === "br")) {
+          if (blackPieces.filter(p => p.piece_type === "bn").length === 2)
+            return true;
+          else return false;
+        } else return false;
+      } else if (blackPieces.length === 1 && whitePieces.length === 3) {
+        if (!whitePieces.find(p => p.piece_type === "wr")) {
+          if (whitePieces.filter(p => p.piece_type === "wn").length === 2)
+            return true;
+          else return false;
+        } else return false;
+      } else return false;
+    } else return false;
+  } else return false;
 }
