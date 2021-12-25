@@ -6,6 +6,7 @@ body {
 .button {
   position: absolute;
   top: 90%;
+  left: 50%
 }
 
 .copyfen {
@@ -36,8 +37,8 @@ body {
 
 canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 25%;
+  left: 25%;
 }
 
 .game {
@@ -48,8 +49,8 @@ canvas {
 
 .game canvas {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 25%;
+  left: 25%;
 }
 
 /* 
