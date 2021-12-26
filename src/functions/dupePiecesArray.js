@@ -1,8 +1,9 @@
 /**
- * @param {Piece[]} pieces 
+ * create a new array of pieces
+ * @param {Piece[]} pieces old pieces array
  * @returns {Piece[]}
  */
- function dupePiecesArray(pieces) {
+function dupePiecesArray(pieces) {
   const p = [];
 
   for (const piece of pieces)

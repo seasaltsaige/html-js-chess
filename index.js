@@ -740,7 +740,7 @@ ${moveNumber}. `;
     // Draw by stalemate
     // regular classic draw. The king is not being attacked
     // and the player has no legal moves
-    } else if (draw(lastPieceKing, board, pieceArray)) {
+    } else if (stalemate(lastPieceKing, board, pieceArray)) {
       window.onclick = () => {};
       ctx.fillStyle = "rgb(31, 32, 43)";
       ctx.font = "50px bold arial";

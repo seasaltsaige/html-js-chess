@@ -1,5 +1,7 @@
 /**
- * @param {string[][]} board 
+ * creates a duplicate board
+ * used for testing if moves are legal
+ * @param {string[][]} board old board
  * @returns {string[][]}
  */
  function duplicateBoard(board) {
