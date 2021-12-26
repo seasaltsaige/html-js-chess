@@ -1,21 +1,40 @@
+// The size in pixels of the chess board
 const boardSize = 800;
+// the size of each individual square, and thus the pieces, in pixels
 const pieceSize = boardSize / 8;
 
+/**
+ * The actively selected piece, null if none
+ * @type {Piece | null}
+ */
 let selectedPiece = null;
+/**
+ * Array of past fen positions
+ * This is used to check for threefold repitition
+ * Occurs if the same FEN string appears in the array 3 times
+ * @type {string[]}
+ */
 const fenArrayForDrawByRepition = [];
+// used to write to board
 const colMap = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
 window.onload = async () => {
+  // current move number, starting at 1. One move is both white and black moving
   let moveNumber = 1;
+  // current ply number, (one ply is half a move, ie: black OR white moving)
   let halfMoveNumber = 0;
+  // initial position, initial board position, turn, castle rights, en passant square, halfmove counter, fullmove counter
   let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
   const date = new Date();
 
   /**
+   * Current turn
    * @type {"b" | "w"}
    */
   let turn = "w";
 
+  // PGN string to keep track of game, can be used in other websites
+  // such as chess.com to analyze the game
   let pgnString = 
   `[Event "Homemade Chess"]
 [Date "${date.getFullYear()}.${date.getMonth()}.${date.getDay()}"]
@@ -26,9 +45,11 @@ window.onload = async () => {
 [Result "*"]
 ${moveNumber}. `;
 
+  // Start game sound effect
   const startGame = document.getElementById("start");
   startGame.play();
 
+  // More sound effects. Self explanitory
   const castleSound = document.getElementById("castle");
   const moveSound = document.getElementById("moveAudio");
   const takeSound = document.getElementById("capture");
@@ -36,18 +57,24 @@ ${moveNumber}. `;
   const checkmateSound = document.getElementById("checkmate");
   const stalemateSound = document.getElementById("stalemate");
 
+  // Buttons to copy fen and pgn
   const fenButton = document.getElementById("fen");
   const pgnButton = document.getElementById("pgn");
 
+  // Promotion board (1x4) .png
   const pawnPromotionBoard = document.getElementById("promote");
-  
+  // main game canvas element
   const canvas = document.getElementById("canvas");
   canvas.width = boardSize;
   canvas.height = boardSize;
-
+  // pawn promotion canvas element
   const secondaryCanvas = document.getElementById("pawn");
   secondaryCanvas.width = boardSize;
   secondaryCanvas.height = boardSize;
+
+  // move and take images
+  const move = document.getElementById("move");
+  const take = document.getElementById("take");
 
   let {
     board,
@@ -62,6 +89,7 @@ ${moveNumber}. `;
   moveNumber = fullMoveClock;
   turn = t;
 
+  // piece map to piece initials (maps to piece image)
   const pieceMap = {
     bp: document.getElementById("bp"),
     br: document.getElementById("br"),
@@ -78,6 +106,7 @@ ${moveNumber}. `;
     wq: document.getElementById("wq"),
   }
 
+  // class map, piece name to class type
   const classMap = {
     p: Pawn,
     r: Rook,
@@ -87,12 +116,14 @@ ${moveNumber}. `;
     k: King,
   };
 
+  // copy fen string
   fenButton.onclick = (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
     navigator.clipboard.writeText(startFEN);
   }
 
+  // copy pgn string
   pgnButton.onclick = (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
@@ -100,9 +131,13 @@ ${moveNumber}. `;
   }
 
   /**
+   * Array of all pieces in the game
+   * Modified when piece is taken (removes piece)
+   * Modified when pawn promotes (removes pawn, adds new piece)
    * @type {Piece[]}
    */
   const pieceArray = [];
+  // counter to keep track of current piece
   let counter = 0;
   for (let row = 0; row < board.length; row++) {
     for (let col = 0; col < board[row].length; col++) {
@@ -110,6 +145,9 @@ ${moveNumber}. `;
       if (piece) {
         pieceArray.push(new piece([row, col], board[row][col][0] === "b" ? "b" : "w"));
         const p = pieceArray[counter];
+
+        // Check castling rights, if castle rights are allowed, king/rooks
+        // have not moved, otherwise they have.
         if (p.piece_type[1] === "k") {
           if (p.color === "w") {
             if (!castleRights.white.kingSide && !castleRights.white.queenSide)
@@ -118,8 +156,6 @@ ${moveNumber}. `;
             if (!castleRights.black.kingSide && !castleRights.black.queenSide)
               p.has_moved = true;
           }
-          
-
         } else if (p.piece_type[1] === "r") {
           if (p.color === "b") {
             if (p.startingLocation[0] !== 0 && (p.startingLocation[1] !== 0 || p.startingLocation[1] !== 7))
@@ -133,17 +169,24 @@ ${moveNumber}. `;
       }
     }
   }
-  const move = document.getElementById("move");
-  const take = document.getElementById("take");
 
+  // get canvas rendering context
   const ctx = canvas.getContext("2d");
-  const ctx2 = secondaryCanvas.getContext("2d");
+  const pawnPromotion_ctx = secondaryCanvas.getContext("2d");
+  // render initial board
   renderBoard(board, ctx, pieceMap, null);
+
+  // set onclick function
   window.onclick = clickEventFN;
+  // this is set as a seperate function to allow different behavior when promoting a pawn
   function clickEventFN (event) {
+    // gets cursor cords on canvas
     const cords = getCursorPosition(canvas, event).reverse().map(v => Math.floor(v / 100));
 
-    if (selectedPiece) {
+    // If you click when the selected piece is not null
+    // handle possible move or setting selected piece back to 
+    // null if invaled move square is clicked
+    if (selectedPiece !== null) {
       const moves = filterLegalMoves(selectedPiece, board, pieceArray, enPassant)// selectedPiece.getMoves(board, pieceArray);
       if (moves.find(v => typeof v === "string")) {
 
@@ -282,18 +325,18 @@ ${moveNumber}. `;
         if (selectedPiece.piece_type[1] === "p") {
           if ((selectedPiece.color === "w" && selectedPiece.location[0] === 0) || (selectedPiece.color === "b" && selectedPiece.location[0] === 7))  {
             isPromotion = true;
-            ctx2.drawImage(pawnPromotionBoard, canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
-            ctx2.rect(canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
-            ctx2.textAlign = "center";
-            ctx2.font = "50px bold arial";
-            ctx2.fillStyle = "black";
-            ctx2.fillText("Choose a piece to promote to", canvas.width/2, canvas.height/2-70);
-            ctx2.drawImage(pieceMap[turn + "r"], canvas.width/2-200, canvas.width/2-50, pieceSize, pieceSize);
-            ctx2.drawImage(pieceMap[turn + "n"], canvas.width/2-100, canvas.height/2-50, pieceSize, pieceSize);
-            ctx2.drawImage(pieceMap[turn + "b"], canvas.width/2, canvas.width/2-50, pieceSize, pieceSize);
-            ctx2.drawImage(pieceMap[turn + "q"], canvas.width/2+100, canvas.height/2-50, pieceSize, pieceSize);
-            ctx2.lineWidth = 5;
-            ctx2.stroke();
+            pawnPromotion_ctx.drawImage(pawnPromotionBoard, canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
+            pawnPromotion_ctx.rect(canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
+            pawnPromotion_ctx.textAlign = "center";
+            pawnPromotion_ctx.font = "50px bold arial";
+            pawnPromotion_ctx.fillStyle = "black";
+            pawnPromotion_ctx.fillText("Choose a piece to promote to", canvas.width/2, canvas.height/2-70);
+            pawnPromotion_ctx.drawImage(pieceMap[turn + "r"], canvas.width/2-200, canvas.width/2-50, pieceSize, pieceSize);
+            pawnPromotion_ctx.drawImage(pieceMap[turn + "n"], canvas.width/2-100, canvas.height/2-50, pieceSize, pieceSize);
+            pawnPromotion_ctx.drawImage(pieceMap[turn + "b"], canvas.width/2, canvas.width/2-50, pieceSize, pieceSize);
+            pawnPromotion_ctx.drawImage(pieceMap[turn + "q"], canvas.width/2+100, canvas.height/2-50, pieceSize, pieceSize);
+            pawnPromotion_ctx.lineWidth = 5;
+            pawnPromotion_ctx.stroke();
 
             const pawn = selectedPiece;
             let pts = null;
@@ -328,7 +371,7 @@ ${moveNumber}. `;
                   pieceArray.push(piece);
                   board[piece.location[0]][piece.location[1]] = piece.piece_type;
                   renderBoard(board, ctx, pieceMap, null);
-                  ctx2.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
+                  pawnPromotion_ctx.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
                   const isCheck = kingAttacked(opponentKing, pieceArray.filter(p => p.color === piece.color), board, pieceArray);
                   const isCheckMate = checkmate(opponentKing, board, pieceArray);
                   const fenStr = cordsToString(cords);
