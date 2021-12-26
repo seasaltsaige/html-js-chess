@@ -500,6 +500,9 @@ ${moveNumber}. `;
                     // regular uneventful take
                     pgnString += `${oldFen[0]}x${fenStr}=${piece.piece_type[1].toUpperCase()} `;
                     takeSound.play();
+                  } else {
+                    pgnString += `${fenStr}=${piece.piece_type[1].toUpperCase()}`;
+                    moveSound.play();
                   }
                   // reset event to normal click event
                   window.onclick = clickEventFN;
@@ -574,27 +577,33 @@ ${moveNumber}. `;
 
         // if there was no pawn promotion continue
         if (!isPromotion) {
+
+          // check checkmate
           if (checkMate) {
+            // disable click event and play sound
             window.onclick = () => {};
             checkmateSound.play();
+
+            // fill canvas with checkmate text
             ctx.fillStyle = "rgb(31, 32, 43)";
             ctx.font = "50px bold arial";
             const { width: textWidth } = ctx.measureText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`);
-            
             roundRect(ctx, canvas.width / 2 - (textWidth / 2) - 50, canvas.height/2 - 100, textWidth + 100, 170, 30);
             ctx.fill();
             ctx.fillStyle = "white";
             ctx.fillText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`, canvas.width/2, canvas.height/2);
 
+            // update pgn string
             let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
-
             const fen = cordsToString(cords);
             const oldFen = cordsToString(oldPos);
             if (tookPiece) pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen}# ${turn === "w" ? "1-0" : "0-1"}`;
             else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN + cordsToString(oldPos)[0]}${fen}# ${turn === "w" ? "1-0" : "0-1"}`;
             pgnString = pgnString.replace("Result \"*\"", `Result "${turn === "w" ? "1-0" : "0-1"}"`)
+            // copy to clipboard
             navigator.clipboard.writeText(pgnString);
           } else if (oppKingAttacked) {
+            // check. play sound, update pgn
             checkSound.play();
             let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
             const fen = cordsToString(cords);
@@ -602,42 +611,63 @@ ${moveNumber}. `;
             if (tookPiece) pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN}x${fen}+ `;
             else pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN + cordsToString(oldPos)[0]}${fen}+ `;
           } else if (tookPiece) {
+            // piece was taken, play sound, update pgn
             takeSound.play();
             let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
             const fen = cordsToString(cords);
             const oldFen = cordsToString(oldPos);
             pgnString += `${pieceForPGN.toLowerCase() === "p" ? oldFen[0] : pieceForPGN + cordsToString(oldPos)[0]}x${fen} `;
           } else {
+            // piece was moved, update pgn
             let pieceForPGN = selectedPiece.piece_type[1].toUpperCase();
             const fen = cordsToString(cords);
             pgnString += `${pieceForPGN.toLowerCase() === "p" ? "" : pieceForPGN + cordsToString(oldPos)[0]}${fen} `;
             moveSound.play();
           }
         }
+        // cycle turn
         turn = turn === "w" ? "b" : "w";
+        // if turn is now white, (black just played), add to full move number
         if (turn === "w") {
           moveNumber++;
           pgnString += `${moveNumber}. `;
         } 
 
+        // update fen string
         startFEN = `${newMainFENString} ${turn} ${castleRightsString} ${pasFen} ${newHalfMove} ${moveNumber}`
 
+        // add fen string to array for threefold repetition
         fenArrayForDrawByRepition.push(startFEN);
         
+        // update enpassant square
         enPassant = pasFen;
       } else {
+        // otherwise deselect piece if selected, re-render board
         selectedPiece = null;
         renderBoard(board, ctx, pieceMap, null);
       }     
       
       selectedPiece = null;
     } else {
+      // if no current selected piece (selectedPiece === null)
+
+      // find piece at clicked cords
       const pieceAtLocation = pieceArray.find(p => p.location[0] === cords[0] && p.location[1] === cords[1]);
-      if (pieceAtLocation?.color !== turn) return;
+
+      // if piece exists continue
       if (pieceAtLocation) { 
+        // if piece color is not the same as the current turn, disregard click
+        if (pieceAtLocation.color !== turn) return;
+
+        // selected piece is now equal to the new piece that was just clicked
         selectedPiece = pieceAtLocation;
+
+        // get the legal moves for the selected piece
         const moves = filterLegalMoves(pieceAtLocation, board, pieceArray, enPassant);
+        // render the board with the current piece selected location
         renderBoard(board, ctx, pieceMap, pieceAtLocation.location);
+        // for each move, render either regular move image if no take
+        // or take image if it would take a piece
         for (const m of moves) {
           if (typeof m === "string") {
             const row = pieceAtLocation.color === "w" ? 7 : 0;
@@ -657,13 +687,19 @@ ${moveNumber}. `;
           }
         }
       } else { 
+        // otherwise deselect the piece and render the board
         selectedPiece = null;
         renderBoard(board, ctx, pieceMap, null);
       }
     } 
 
+    // last colors piece king
     const lastPieceKing = pieceArray.find(p => p.color === turn && p.piece_type[1] === "k");
 
+    // check different conditions for draw
+
+    // Draw by repetition states that if a position occurs 3 times,
+    // a player can claim a draw. In this game, it occurs automatically.
     if (fenArrayForDrawByRepition.filter(v => v.slice(0, v.length - 4) === startFEN.slice(0, v.length - 4)).length === 3) {
       window.onclick = () => {};
       ctx.fillStyle = "rgb(31, 32, 43)";
@@ -681,6 +717,9 @@ ${moveNumber}. `;
       pgnString = pgnString.replace("Result \"*\"", `Result "1/2-1/2"`)
       navigator.clipboard.writeText(pgnString);
 
+    // Draw by 50-move rule.
+    // if no capture and no pawn pushes happen for 50 half moves (either black or white move)
+    // the game is declared a draw as no progress is being made
     } else if (parseInt(startFEN.split(" ")[4]) === 50) {
       window.onclick = () => {};
       ctx.fillStyle = "rgb(31, 32, 43)";
@@ -697,6 +736,10 @@ ${moveNumber}. `;
       pgnString += "1/2-1/2";
       pgnString = pgnString.replace("Result \"*\"", `Result "1/2-1/2"`)
       navigator.clipboard.writeText(pgnString);
+    
+    // Draw by stalemate
+    // regular classic draw. The king is not being attacked
+    // and the player has no legal moves
     } else if (draw(lastPieceKing, board, pieceArray)) {
       window.onclick = () => {};
       ctx.fillStyle = "rgb(31, 32, 43)";
@@ -713,6 +756,9 @@ ${moveNumber}. `;
       pgnString += "1/2-1/2";
       pgnString = pgnString.replace("Result \"*\"", `Result "1/2-1/2"`)
       navigator.clipboard.writeText(pgnString);
+    // Draw by insufficient matterial
+    // Just read the chess.com page about it
+    // https://support.chess.com/article/128-what-does-insufficient-mating-material-mean
     } else if (insufficientMaterial(pieceArray)) {
       window.onclick = () => {};
       ctx.fillStyle = "rgb(31, 32, 43)";
