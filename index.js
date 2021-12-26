@@ -345,39 +345,54 @@ ${moveNumber}. `;
       // Note: (can still be a king, just without the ability to 
       // castle at this moment)
       } else if (moves.find(v => v[0] === cords[1] && v[1] === cords[0])) {
+        // assume no piece was taken
         let tookPiece = false;
-
+        // if board pos is not equal to current color and also not equal to 
+        // empty string, a piece was taken
         if (board[cords[0]][cords[1]][0] !== selectedPiece.color && board[cords[0]][cords[1]] !== "")  {
           pieceArray.splice(pieceArray.findIndex(v => v.location[0] === cords[0] && v.location[1] === cords[1]), 1);
           tookPiece = true;
         }
 
+        // if enPassant, get cords of location
         const enPassantCords = fenToPosition(enPassant);
 
         let takenPawnCords;
+        // if piece type is a pawn, and clicked at enpassant cords,
+        // en passant pawn was taken
+        // set took piece to true and get pawn location
         if (selectedPiece.piece_type[1] === "p" && enPassantCords[0] === cords[0] && enPassantCords[1] === cords[1]) {
           tookPiece = true;
           takenPawnCords = [turn === "w" ? enPassantCords[0] + 1 : enPassantCords[0] - 1, enPassantCords[1]];
         }
 
+        // update cords, board and set piece to has_moved = true
         const oldPos = selectedPiece.location;
         selectedPiece.location = cords;
         selectedPiece.has_moved = true;
         board[cords[0]][cords[1]] = selectedPiece.piece_type;
         board[oldPos[0]][oldPos[1]] = "";
+
+        // if enpassant pawn was taken, remove it from array and board
         if (takenPawnCords) {
           pieceArray.splice(pieceArray.findIndex(p => p.location[0] === takenPawnCords[0] && p.location[1] === takenPawnCords[1]), 1);
           board[takenPawnCords[0]][takenPawnCords[1]] = "";
         }
 
+        // check if the opponents king is now attacked by any piece
         const opponentKing = pieceArray.find(p => p.piece_type[1] === "k" && p.color !== turn);
         const oppKingAttacked = kingAttacked(opponentKing, pieceArray.filter(p => p.color === turn).filter(p => p.piece_type[1] !== "k"), board, pieceArray);
 
+        // assume no pawn promotion happens
         let isPromotion = false;
 
         if (selectedPiece.piece_type[1] === "p") {
+          // if pawn reaches the back rank, pawn promotion takes place
           if ((selectedPiece.color === "w" && selectedPiece.location[0] === 0) || (selectedPiece.color === "b" && selectedPiece.location[0] === 7))  {
             isPromotion = true;
+
+            // ----
+            // draw pawn promotion selection board
             pawnPromotion_ctx.drawImage(pawnPromotionBoard, canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
             pawnPromotion_ctx.rect(canvas.width/2 - 200, canvas.height/2 - 50, 400, 100);
             pawnPromotion_ctx.textAlign = "center";
@@ -390,23 +405,29 @@ ${moveNumber}. `;
             pawnPromotion_ctx.drawImage(pieceMap[turn + "q"], canvas.width/2+100, canvas.height/2-50, pieceSize, pieceSize);
             pawnPromotion_ctx.lineWidth = 5;
             pawnPromotion_ctx.stroke();
-
+            // ----
+            
+            // old pawn
             const pawn = selectedPiece;
+            // (piece to set) for promotion
             let pts = null;
 
+            // reset onclick event to allow interaction with 
+            // pawn promotion board
             window.onclick = (ev) => {
+              // x, y cords on board
               const [x, y] = getCursorPosition(canvas, ev);
 
+              // different ranges for valid selection
               const yRange = [350, 450];
               const rookX = [200, 300];
               const knightX = [300, 400];
               const bishopX = [400, 500];
               const queenX = [500, 600];
 
+              // if in valid y range, continue
               if (y >= yRange[0] && y <= yRange[1]) {
-                /**
-                 * @type {Rook | Knight | Bishop | Queen}
-                 */
+                // set to correct piece type depending on ranges
                 if (x >= rookX[0] && x < rookX[1])
                   pts = Rook;
                 else if (x >= knightX[0] && x < knightX[1])
@@ -417,29 +438,45 @@ ${moveNumber}. `;
                   pts = Queen;
                 else pts = null;
 
+                // if pts is not null continue
                 if (pts !== null) {
+                  // create the new piece, set its start location to the pawns start
+                  // location (disallow confusing castle glitches with rooks)
+                  // remove pawn from array, add new piece to array
                   const piece = new pts(pawn.location, pawn.color);
                   piece.startingLocation = pawn.startingLocation;
                   pieceArray.splice(pieceArray.findIndex(v => v.location[0] === pawn.location[0] && v.location[1] === pawn.location[1]), 1);
                   pieceArray.push(piece);
+
+                  // update board and render it
                   board[piece.location[0]][piece.location[1]] = piece.piece_type;
                   renderBoard(board, ctx, pieceMap, null);
+                  // clear pawn promotion canvas
                   pawnPromotion_ctx.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
+                  
+                  // check for check and checkmate
                   const isCheck = kingAttacked(opponentKing, pieceArray.filter(p => p.color === piece.color), board, pieceArray);
                   const isCheckMate = checkmate(opponentKing, board, pieceArray);
+                  // get old and new algebraic notation cords
                   const fenStr = cordsToString(cords);
                   const oldFen = cordsToString(oldPos);
 
+                  // end game as checkmate if checkmate occurs
                   if (isCheckMate) {
+                    // if took piece to cause checkmate
+                    // update pgn correctly (ie: exf8=Q#) e file pawn took on f8, promotes to queen, causes checkmate
                     if (tookPiece) {
                       pgnString += `${oldFen[0]}x${fenStr}=${piece.piece_type[1].toUpperCase()}# ${turn === "w" ? "1-0" : "0-1"}`;
                     } else {
+                      // (ie: e8=Q#) e8 pawn promotes to queen and causes checkmate
                       pgnString += `${fenStr}=${piece.piece_type[1].toUpperCase()}# ${turn === "w" ? "1-0" : "0-1"}`;
                     }
 
+                    // clear event and play sound
                     window.onclick = () => {};
                     checkmateSound.play();
 
+                    // render win text
                     ctx.fillStyle = "rgb(31, 32, 43)";
                     ctx.font = "50px bold arial";
                     const { width: textWidth } = ctx.measureText(`${turn === "w" ? "White" : "Black"} won due to checkmate!`);
@@ -453,16 +490,18 @@ ${moveNumber}. `;
                     
                   } else if (isCheck) {
 
+                    // update pgn similar to above, but + instead of #
                     if (tookPiece) 
                       pgnString += `${oldFen[0]}x${fenStr}=${piece.piece_type[1].toUpperCase()}+ `;
                     else pgnString += `${fenStr}=${piece.piece_type[1].toUpperCase()}+ `;
 
                     checkSound.play();
                   } else if (tookPiece) {
+                    // regular uneventful take
                     pgnString += `${oldFen[0]}x${fenStr}=${piece.piece_type[1].toUpperCase()} `;
                     takeSound.play();
                   }
-
+                  // reset event to normal click event
                   window.onclick = clickEventFN;
                   return;
                 }
@@ -471,18 +510,27 @@ ${moveNumber}. `;
           }
         }
 
+        // outside of pawn checks now
+
+        // check for checkmate
         const checkMate = checkmate(pieceArray.find(p => p.color !== selectedPiece.color && p.piece_type[1] === "k"), board, pieceArray);
         
+        // render the new board
         renderBoard(board, ctx, pieceMap, null);
-
-        
+        // get new main fen string (first part)
         const newMainFENString = boardToFEN(board);
+        // assume enpassant is nothing
         let pasFen = "-";
+        // assume halfmove got reset
         let newHalfMove = 0;
+
+        // if pawn moves two spaces forwards, enpassant = square behind pawn
         if (Math.abs(oldPos[0] - selectedPiece.location[0]) === 2 && selectedPiece.piece_type[1] === "p") {
           const passantcords = turn === "w" ? [selectedPiece.location[0] + 1, selectedPiece.location[1]] : [selectedPiece.location[0] - 1, selectedPiece.location[1]];
           pasFen = cordsToString(passantcords);
         }
+        // if no pawn moved and no piece was taken
+        // iterate halfmove clock
         if (selectedPiece.piece_type[1] !== "p" && !tookPiece) {
           newHalfMove = halfMoveClock + 1;
           halfMoveClock++;
@@ -490,6 +538,7 @@ ${moveNumber}. `;
           halfMoveClock = newHalfMove;
         }
         
+        // assign new castling rights, based off of if rooks moved or not
         const newCastleRights = {
           black: {
             queenSide: !pieceArray.find(p => p.startingLocation[0] === 0 && p.startingLocation[1] === 0)?.has_moved,
@@ -504,19 +553,26 @@ ${moveNumber}. `;
         const blackKingMoved = pieceArray.find(p => p.piece_type === "bk").has_moved;
         const whiteKingMoved = pieceArray.find(p => p.piece_type === "wk").has_moved;
 
+        // black king has moved, both sides are unavaliable
         if (blackKingMoved) {
           newCastleRights.black.queenSide = false;
           newCastleRights.black.kingSide = false;
         }
-
+        // white king has moved, both sides are unavaliable
         if (whiteKingMoved) {
           newCastleRights.white.queenSide = false;
           newCastleRights.white.kingSide = false;
         }
 
+        // set string (KQkq) means both sides can castle on both sides
+        // (KQ) means only white can castle on both sides (kq) for black
+        // (Kk) means both can only castle on kingside
+        // (Qq) means both can only castle on queenside
+        // (-) means neither can castle at all
         let castleRightsString = `${newCastleRights.white.kingSide ? "K" : ""}${newCastleRights.white.queenSide ? "Q" : ""}${newCastleRights.black.kingSide ? "k" : ""}${newCastleRights.black.queenSide ? "q" : ""}`;
         if (castleRightsString.length === 0) castleRightsString = "-";
 
+        // if there was no pawn promotion continue
         if (!isPromotion) {
           if (checkMate) {
             window.onclick = () => {};
