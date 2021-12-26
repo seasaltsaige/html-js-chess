@@ -180,87 +180,131 @@ ${moveNumber}. `;
   window.onclick = clickEventFN;
   // this is set as a seperate function to allow different behavior when promoting a pawn
   function clickEventFN (event) {
-    // gets cursor cords on canvas
-    const cords = getCursorPosition(canvas, event).reverse().map(v => Math.floor(v / 100));
+    // gets cursor cords on canvas [y, x] for board pos
+    const cords = getCursorPosition(canvas, event).reverse()
+    // dividing by 100 gets board array location
+    .map(v => Math.floor(v / 100));
 
     // If you click when the selected piece is not null
     // handle possible move or setting selected piece back to 
     // null if invaled move square is clicked
     if (selectedPiece !== null) {
+      // all legal, possible moves for the currently selected piece
       const moves = filterLegalMoves(selectedPiece, board, pieceArray, enPassant)// selectedPiece.getMoves(board, pieceArray);
+      // if the move array containes a string, we are automatically dealing
+      // with a king that has the option of castling
+      // otherwise it could be any other piece
       if (moves.find(v => typeof v === "string")) {
 
+        // get the back rank for the current color
         const correct_row = selectedPiece.color === "w" ? 7 : 0;
+        // square that the king will end up on [queenside, kingside]
         const castle_squares = [[correct_row, 2], [correct_row, 6]]; // qs, ks
 
+        // if you click on queenside but the array doesnt have queenside as an option
+        // return
         if (cords[0] === castle_squares[0][0] && cords[1] === castle_squares[0][1] && !moves.includes("queen_side_castle"))
           return;
+        // same as above but for kingside
         else if (cords[0] === castle_squares[1][0] && cords[1] === castle_squares[1][1] && !moves.includes("king_side_castle"))
           return;
 
+        // assume the player is trying to castle
         let trying_to_castle = true;
+        // if they dont click on either castle square, they aren't
         if (!(cords[0] === castle_squares[0][0] && cords[1] === castle_squares[0][1]) && !(cords[0] === castle_squares[1][0] && cords[1] === castle_squares[1][1])) 
           trying_to_castle = false;
 
+        // if they are trying to castle, handle that
         if (trying_to_castle) {
+          // get the correct rooks column depending on where is clicked
           const rook_col = cords[1] === 2 && cords[0] === correct_row ? 0 
           : cords[1] === 6 && cords[0] === correct_row ? 7 
           : -1;
+          // find said rook
           const rook = pieceArray.find(p => p.location[0] === correct_row && p.location[1] === rook_col);
+          // if the rook exists, move the pieces
           if (rook) {
+
+            // get new piece positions
             const newRookPos = [correct_row, cords[1] === 2 ? 3 : 5];
             const newKingPos = [correct_row, cords[1]];
 
+            // set positions in board array
             board[rook.location[0]][rook.location[1]] = "";
             board[newRookPos[0]][newRookPos[1]] = rook.piece_type;
             board[selectedPiece.location[0]][selectedPiece.location[1]] = "";
             board[newKingPos[0]][newKingPos[1]] = selectedPiece.piece_type;
-            
+            // set positions in actual piece objects
             selectedPiece.location = newKingPos;
             rook.location = newRookPos;
+            // set to moved to disallow any more castling
             selectedPiece.has_moved = true;
             rook.has_moved = true;
-
+            // piece is now deselected
             selectedPiece = null;
+            // render the new board
             renderBoard(board, ctx, pieceMap, null);
+            // play castling sound
             castleSound.play();
+            // depending on which side was caslted add to pgn string
+            // King side (column 7) is short castle (O-O)
+            // Queen side (column 0) is long caslt (O-O-O)
             if (rook_col === 7) pgnString += "O-O ";
             else if (rook_col === 0) pgnString += "O-O-O ";
 
+            // go to next players turn
             turn = turn === "w" ? "b" : "w";
 
+            // update FEN string
             const oldFenArr = startFEN.split(" ");
             oldFenArr.shift();
             oldFenArr.shift();
             const newFen = boardToFEN(board);
             startFEN = newFen + turn + oldFenArr.join(" ");
-
+            // add to fen array for threefold rep
             fenArrayForDrawByRepition.push(startFEN);
-
+            // add to half move clock (no capture or pawn movement)
+            halfMoveClock++;
+            // if the next turn is white (black just played)
+            // itterate the whole full number and add it to pgn
             if (turn === "w") {
               moveNumber++;
               pgnString += `${moveNumber}. `;
             } 
 
           }
+        // otherwise just move the king
         } else {
+          // if the clicked on square is a valid move in the kings move array
           if (moves.find(v => v[0] === cords[1] && v[1] === cords[0])) {
+            // assume no piece was taken by the move
             let tookPiece = false;
+            // if the selected squares value in the board array
+            // is not equal the the current pieces color and also not 
+            // equal to and empty string (the array's default) then a piece
+            // was taken
             if (board[cords[0]][cords[1]][0] !== selectedPiece.color && board[cords[0]][cords[1]] !== "")  {
               pieceArray.splice(pieceArray.findIndex(v => v.location[0] === cords[0] && v.location[1] === cords[1]), 1);
               tookPiece = true;
             }
 
+            // old position of the selected piece
             const oldPos = selectedPiece.location;
+            // update position in array along with has_moved
             selectedPiece.location = cords;
             selectedPiece.has_moved = true;
+            // set new pos to piece type in array
             board[cords[0]][cords[1]] = selectedPiece.piece_type;
+            // erase old pos
             const oldPieceBoard = board[oldPos[0]][oldPos[1]];
             board[oldPos[0]][oldPos[1]] = "";
-            
+            // deselect piece and update board
             selectedPiece = null;
             renderBoard(board, ctx, pieceMap, null);
-    
+            
+            // update pgn depending on if piece was taken or not
+            // play appropriate sound
             const pieceForPGNTooken = oldPieceBoard[1].toUpperCase();
             const cordsAsString = cordsToString(cords);
             if (tookPiece) {
@@ -271,6 +315,7 @@ ${moveNumber}. `;
               pgnString += `${pieceForPGNTooken}${cordsAsString}`;
             }
 
+            // update fen string
             const oldFenArr = startFEN.split(" ");
             oldFenArr.shift();
             oldFenArr.shift();
@@ -281,16 +326,24 @@ ${moveNumber}. `;
 
             fenArrayForDrawByRepition.push(startFEN);
 
+            // itterate half move clock if no take
+            if (!tookPiece) halfMoveClock++;
+
+            // if black just played, itterate full move number and add
+            // to pgn
             if (turn === "w") {
               moveNumber++;
               pgnString += `${moveNumber}. `;
             } 
           } else {
+            // otherwise, deselect the piece and re-render the board
             selectedPiece = null;
             renderBoard(board, ctx, pieceMap, null);
           }       
         }
-
+      // otherwise if no strings in move array
+      // Note: (can still be a king, just without the ability to 
+      // castle at this moment)
       } else if (moves.find(v => v[0] === cords[1] && v[1] === cords[0])) {
         let tookPiece = false;
 
