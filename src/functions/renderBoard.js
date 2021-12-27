@@ -1,12 +1,16 @@
 /**
- * @param {*} board 
- * @param {CanvasRenderingContext2D} ctx 
- * @param {*} pieceMap 
+ * Render the board on the canvas with provided board position
+ * @param {string[][]} board the current board position
+ * @param {CanvasRenderingContext2D} ctx canvas rendering context
+ * @param {{}} pieceMap map of piece images (just an object because im lazy)
+ * @param {[number, number]} selectedPieceCords
  */
- function renderBoard(board, ctx, pieceMap, selectedPieceCords) {
+function renderBoard(board, ctx, pieceMap, selectedPieceCords) {
+  // draw base board
   const image = document.getElementById("board");
   ctx.drawImage(image, 0, 0, boardSize, boardSize);
 
+  // draw cordinates on board
   ctx.textAlign = "center";
   ctx.fillStyle = "white";
   ctx.font = "25px arial";
@@ -30,18 +34,19 @@
   ctx.fillText("4", 12, 427);
   ctx.fillText("2", 12, 627);
 
+  // go through each board position
   for (let row = 0; row < board.length; row++) {
     for (let col = 0; col < board[row].length; col++) {
+      // if the board has a piece
       if (board[row][col] !== "") {
+        // if there is a selected piece and we are at that position
         if (selectedPieceCords !== null && row === selectedPieceCords[0] && col === selectedPieceCords[1]) {
+          // fill a faint yellow square to indicate it being selected
           ctx.fillStyle = "#f6ff0035";
           ctx.fillRect(col * pieceSize, row * pieceSize, pieceSize, pieceSize);
         }
-        ctx.drawImage(pieceMap[board[row][col]], 
-          col*pieceSize, 
-          row*pieceSize, 
-          pieceSize, 
-          pieceSize);
+        // finally draw the piece in the correct location
+        ctx.drawImage(pieceMap[board[row][col]], col*pieceSize, row*pieceSize, pieceSize, pieceSize);
       }
     }
   }

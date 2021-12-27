@@ -86,7 +86,35 @@
       }
     }
 
-    return unattacked_moves;
+    // move king to temp board position, and check if the king
+    // is being attacked in the new position, if it is, ignore the move
+    const legalMoves = [];
+    const kingActualPos = piece.location;
+
+    for (const move of unattacked_moves) {
+      if (typeof move === "string") {
+        legalMoves.push(move);
+        continue;
+      }
+      let tempBoard = duplicateBoard(board);
+      let dupePieces = dupePiecesArray(pieceArray);
+      tempBoard[kingActualPos[0]][kingActualPos[1]] = "";
+      const oldSpot = tempBoard[move[1]][move[0]];
+
+      if (oldSpot !== "")
+        dupePieces.splice(dupePieces.findIndex(p => p.location[0] === move[1] && p.location[1] === move[0]), 1);
+
+      let newOppPieces = dupePieces.filter(p => p.color !== piece.color).filter(p => p.piece_type !== "k");
+
+      tempBoard[move[1]][move[0]] = piece.piece_type;
+      piece.location = [move[1], move[0]];
+      if (!kingAttacked(piece, newOppPieces, tempBoard, dupePieces))
+        legalMoves.push(move);
+    }
+
+    piece.location = kingActualPos;
+
+    return legalMoves;
   } else {
     // if its not a king
     const legalMoves = [];
@@ -105,7 +133,7 @@
       if (oldSpot !== "")
         dupePieces.splice(dupePieces.findIndex(p => p.location[0] === move[1] && p.location[1] === move[0]), 1);
       // get new opponent pieces
-      let newOppPieces = dupePieces.filter(p => p.color !== piece.color).filter(p => p.piece_type !== "k");
+      let newOppPieces = dupePieces.filter(p => p.color !== piece.color);
       // set the piece to the location
       tempBoard[move[1]][move[0]] = piece.piece_type;
       // if the king is not attacked push the move

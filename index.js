@@ -24,7 +24,7 @@ window.onload = async () => {
   // current ply number, (one ply is half a move, ie: black OR white moving)
   let halfMoveNumber = 0;
   // initial position, initial board position, turn, castle rights, en passant square, halfmove counter, fullmove counter
-  let startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+  let startFEN = "k7/8/8/8/8/8/8/KQ6 w KQkq - 0 1";
   const date = new Date();
 
   /**
