@@ -2,11 +2,15 @@ body {
   background-color: #2b2a31;
 }
 
+.wrapper {
+  display: grid;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+}
 
 .button {
-  position: absolute;
-  top: 90%;
-  left: 50%
+  align-self: center;
 }
 
 .copyfen {
@@ -31,31 +35,13 @@ body {
   padding-right: 10px;
 }
 
-/* .copyfen::selection {
-
-} */
-
-canvas {
-  position: absolute;
-  top: 25%;
-  left: 25%;
+.game,
+.pawn {
+  width: 800px;
+  height: 800px;
+  justify-self: center;
 }
 
-.game {
-  position: relative;
-  /* width: 400px;
-  height: 300px; */
+.game canvas:hover {
+  cursor: pointer;
 }
-
-.game canvas {
-  position: absolute;
-  top: 25%;
-  left: 25%;
-}
-
-/* 
-.pawnPromotion {
-  position: absolute;
-  left: 50%;
-  top: 50%
-} */
